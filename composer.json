@@ -24,16 +24,14 @@
   "keywords": [
     "wordpress"
   ],
-  "support": {
-    "issues": "https://github.com/roots/clover/issues",
-    "forum": "https://discourse.roots.io/"
-  },
   "autoload": {
     "psr-4": {
       "ClearCacheAll\\": "src/"
     }
   },
   "require": {
-    "php": "^7.0"
-  }
+    "php": "^7.1"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }
