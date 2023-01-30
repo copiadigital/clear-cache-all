@@ -1,0 +1,29 @@
+{
+  "name": "roots/clover",
+  "type": "wordpress-plugin",
+  "license": "MIT",
+  "description": "WordPress starter plugin",
+  "homepage": "https://roots.io/",
+  "authors": [
+    {
+      "name": "Roots",
+      "email": "team@roots.io",
+      "homepage": "https://github.com/roots"
+    }
+  ],
+  "keywords": [
+    "wordpress"
+  ],
+  "support": {
+    "issues": "https://github.com/roots/clover/issues",
+    "forum": "https://discourse.roots.io/"
+  },
+  "autoload": {
+    "psr-4": {
+      "ClearCacheAll\\": "src/"
+    }
+  },
+  "require": {
+    "php": "^7.0"
+  }
+}
