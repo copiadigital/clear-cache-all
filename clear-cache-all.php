@@ -8,7 +8,7 @@
 * License:      MIT License
 */
 
-require_once __DIR__.'/vendor/autoload.php';
+require_once __DIR__.'/../../../../vendor/autoload.php';
 
 $clover = new ClearCacheAll\Providers\ClearCacheAllServiceProvider;
 $clover->register();
