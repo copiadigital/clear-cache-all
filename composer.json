@@ -1,14 +1,24 @@
 {
-  "name": "roots/clover",
+  "name": "copiadigital/clear-cache-all",
   "type": "wordpress-plugin",
   "license": "MIT",
-  "description": "WordPress starter plugin",
-  "homepage": "https://roots.io/",
+  "description": "Automate clear cache after save post. Cache included (w3 total cache, wordpress cache, & views blade).",
+  "homepage": "https://github.com/copiadigital/clear-cache-all",
   "authors": [
     {
-      "name": "Roots",
-      "email": "team@roots.io",
-      "homepage": "https://github.com/roots"
+      "name": "Chris Willmott",
+      "email": "chris.willmott@copiadigital.com",
+      "homepage": "https://github.com/teaforchris"
+    },
+    {
+      "name": "Jayson Garcia",
+      "email": "jayson.garcia@copiadigital.com",
+      "homepage": "https://github.com/hallowichig0"
+    },
+    {
+      "name": "Copia Digital Dev Team",
+      "email": "info@copiadigital.com",
+      "homepage": "https://github.com/copiadigital"
     }
   ],
   "keywords": [
