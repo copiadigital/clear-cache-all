@@ -10,6 +10,8 @@
 
 require_once __DIR__.'/../../../../vendor/autoload.php';
 
+define( 'CLEAR_CACHE_ALL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+
 $clover = new ClearCacheAll\Providers\ClearCacheAllServiceProvider;
 $clover->register();
 
