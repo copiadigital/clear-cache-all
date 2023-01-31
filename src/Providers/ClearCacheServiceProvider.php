@@ -14,13 +14,25 @@ class ClearCacheServiceProvider implements Provider
                 }
                 // clear view blade cache
                 if (function_exists('view')) {
-                    shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar acorn view:clear --allow-root');
+                    $view_clear_cli = shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar acorn view:clear --allow-root');
+                } else {
+                    delete_views_cache();
                 }
                 // clear wordpress cache
                 shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush --allow-root');
             }
         }
         add_action( 'post_updated', __NAMESPACE__ . '\\clear_cache_after_save_post' );
-        
+
+        function delete_views_cache() {
+            $files = glob(get_stylesheet_directory() . '/storage/framework/views/*');
+            // Deleting all the files in the /storage/framework/views
+            foreach($files as $file) {
+                if(is_file($file)) {
+                    // Delete the given file
+                    unlink($file); 
+                }
+            }
+        }
     }
 }
