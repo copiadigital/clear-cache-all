@@ -27,10 +27,12 @@ class ClearCacheServiceProvider implements Provider
         function delete_views_cache() {
             $files = glob(get_stylesheet_directory() . '/storage/framework/views/*');
             // Deleting all the files in the /storage/framework/views
-            foreach($files as $file) {
-                if(is_file($file)) {
-                    // Delete the given file
-                    unlink($file); 
+            if($files) {
+                foreach($files as $file) {
+                    if(is_file($file)) {
+                        // Delete the given file
+                        unlink($file); 
+                    }
                 }
             }
         }
