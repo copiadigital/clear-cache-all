@@ -74,7 +74,7 @@ class ManualClearCacheServiceProvider implements Provider
      * @return  string  Name of the transient.
      */
     private function get_cache_cleared_transient_name() {
-        $transient_name = 'cache_enabler_cache_cleared_' . get_current_user_id();
+        $transient_name = 'clear_cache_all_cleared_' . get_current_user_id();
 
         return $transient_name;
     }
