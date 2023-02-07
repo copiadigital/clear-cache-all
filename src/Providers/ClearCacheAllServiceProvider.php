@@ -7,7 +7,8 @@ class ClearCacheAllServiceProvider implements Provider
     protected function providers()
     {
         return [
-            ClearCacheServiceProvider::class,
+            AutomateClearCacheServiceProvider::class,
+            ManualClearCacheServiceProvider::class,
         ];
     }
 
