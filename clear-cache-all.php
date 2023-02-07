@@ -1,8 +1,9 @@
 <?php
 /**
 * Plugin Name:  Clear Cache All
+* Text Domain:  clear-cache-all
 * Description:  Automate clear cache after save post. Cache included (w3 total cache, wordpress cache, & views blade).
-* Version:      1.0.4
+* Version:      1.0.5
 * Author:       Copia Digital
 * Author URI:   https://www.copiadigital.com/
 * License:      MIT License
