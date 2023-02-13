@@ -9,7 +9,10 @@
 * License:      MIT License
 */
 
-require_once __DIR__.'/../../../../vendor/autoload.php';
+$autoload_path = __DIR__.'/vendor/autoload.php';
+if ( file_exists( $autoload_path ) ) {
+    require_once( $autoload_path );
+}
 
 define( 'CLEAR_CACHE_ALL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
