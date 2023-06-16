@@ -39,6 +39,18 @@ class ClearAllCaches {
         }
     }
 
+    public function clear_specific_post_page_cache() {
+        if ( function_exists('shell_exec') ) {
+            // clear w3 total cache
+            if ( defined( 'W3TC' ) && $id = get_the_ID()) {
+                shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . "wp-cli.phar w3-total-cache flush post $id");
+            }
+
+            // clear wordpress cache
+            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
+        }
+    }
+
     private function delete_views_cache() {
         $files = glob(get_stylesheet_directory() . '/storage/framework/views/*');
         // Deleting all the files in the /storage/framework/views
