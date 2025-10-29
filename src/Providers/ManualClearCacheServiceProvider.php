@@ -24,6 +24,12 @@ class ManualClearCacheServiceProvider implements Provider
             return;
         }
 
+        // Only show for Copia Digital users
+        $current_user = wp_get_current_user();
+        if ( empty($current_user->user_email) || !str_contains( $current_user->user_email, '@copiadigital.co' ) ) {
+            return;
+        }
+
         $wp_admin_bar->add_menu( array(
             'id'    => 'clear_cache_all',
             'title' => 'Clear Cache All',
