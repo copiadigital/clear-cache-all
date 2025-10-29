@@ -4,9 +4,12 @@ A WordPress plugin for clearing all caches including Polylang cache.
 
 ## Features
 
+- Automatic cache clearing on post save
 - Clears WordPress object cache
 - Clears Polylang cache via WP-CLI
-- Automated cache management
+- Clears W3 Total Cache (if installed)
+- Clears Blade view cache
+- Manual cache clearing via admin bar (restricted to Copia Digital users only)
 
 ## Requirements
 
@@ -42,10 +45,22 @@ php wp-cli.phar --version
 
 ## Usage
 
-The plugin automatically clears caches when triggered. Cache clearing includes:
+### Automatic Cache Clearing
 
+The plugin automatically clears all caches when:
+- A post is saved or updated
+- Content changes are published
+
+### Manual Cache Clearing
+
+Copia Digital users (with @copiadigital.co email addresses) will see a "Clear Cache All" option in the WordPress admin bar for manual cache clearing.
+
+### Caches Cleared
+
+- WordPress object cache: `wp cache flush`
 - Polylang cache: `wp pll cache clear`
-- Additional cache types as configured
+- W3 Total Cache (if installed)
+- Blade view cache
 
 ## Development
 
