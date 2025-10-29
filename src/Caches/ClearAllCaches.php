@@ -21,6 +21,9 @@ class ClearAllCaches {
             }
             // clear wordpress cache
             shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
+
+            // clear polylang cache
+            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar pll cache clear');
         }
     }
 
@@ -36,6 +39,9 @@ class ClearAllCaches {
             
             // clear wordpress cache
             shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
+
+            // clear polylang cache
+            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar pll cache clear');
         }
     }
 
@@ -48,6 +54,9 @@ class ClearAllCaches {
 
             // clear wordpress cache
             shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
+
+            // clear polylang cache
+            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar pll cache clear');
         }
     }
 
@@ -58,7 +67,7 @@ class ClearAllCaches {
             foreach($files as $file) {
                 if(is_file($file)) {
                     // Delete the given file
-                    unlink($file); 
+                    unlink($file);
                 }
             }
         }
