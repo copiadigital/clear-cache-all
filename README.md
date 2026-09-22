@@ -4,9 +4,9 @@ A WordPress plugin for clearing all caches including Polylang cache.
 
 ## Features
 
-- Automatic cache clearing on post save
+- Automatic cache clearing on post save (can be turned off in Settings > Clear Cache All)
 - Clears WordPress object cache
-- Clears Polylang cache via WP-CLI
+- Clears Polylang's languages cache (when Polylang is active)
 - Clears W3 Total Cache (if installed)
 - Clears Blade view cache
 - Manual cache clearing via admin bar (restricted to Copia Digital users only)
@@ -51,6 +51,10 @@ The plugin automatically clears all caches when:
 - A post is saved or updated
 - Content changes are published
 
+This is on by default. To turn it off, go to **Settings > Clear Cache All** and untick **Automatically clear caches when content is saved**. Caches can then still be cleared manually from the admin bar.
+
+Worth turning off on larger sites: caches are cleared once for every post updated, and saving a menu updates every menu item, so saves can become slow enough to time out.
+
 ### Manual Cache Clearing
 
 Copia Digital users (with @copiadigital.co email addresses) will see a "Clear Cache All" option in the WordPress admin bar for manual cache clearing.
@@ -58,7 +62,7 @@ Copia Digital users (with @copiadigital.co email addresses) will see a "Clear Ca
 ### Caches Cleared
 
 - WordPress object cache: `wp cache flush`
-- Polylang cache: `wp pll cache clear`
+- Polylang languages cache: `PLL()->model->clean_languages_cache()`, only when Polylang is active
 - W3 Total Cache (if installed)
 - Blade view cache
 
@@ -69,8 +73,14 @@ Copia Digital users (with @copiadigital.co email addresses) will see a "Clear Ca
 ```
 clear-cache-all/
 ├── src/
-│   └── Caches/
-│       └── ClearAllCaches.php
+│   ├── Caches/
+│   │   └── ClearAllCaches.php
+│   └── Providers/
+│       ├── AutomateClearCacheServiceProvider.php
+│       ├── ClearCacheAllServiceProvider.php
+│       ├── ManualClearCacheServiceProvider.php
+│       ├── Provider.php
+│       └── SettingsServiceProvider.php
 ├── wp-cli.phar
 └── README.md
 ```

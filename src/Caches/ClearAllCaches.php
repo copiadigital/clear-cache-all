@@ -21,10 +21,9 @@ class ClearAllCaches {
             }
             // clear wordpress cache
             shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
-
-            // clear polylang cache
-            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar pll cache clear');
         }
+
+        $this->clear_polylang_cache();
     }
 
     public function clear_all_caches_not_view() {
@@ -39,10 +38,9 @@ class ClearAllCaches {
             
             // clear wordpress cache
             shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
-
-            // clear polylang cache
-            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar pll cache clear');
         }
+
+        $this->clear_polylang_cache();
     }
 
     public function clear_specific_post_page_cache() {
@@ -54,10 +52,32 @@ class ClearAllCaches {
 
             // clear wordpress cache
             shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
-
-            // clear polylang cache
-            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar pll cache clear');
         }
+
+        $this->clear_polylang_cache();
+    }
+
+    /**
+     * Clears Polylang's languages cache, when Polylang is active.
+     *
+     * Polylang has no WP-CLI command for this: `wp pll` only offers `language`
+     * and `setting`, so the `wp pll cache clear` this used to run failed on
+     * every site, with or without Polylang. Call Polylang's own cleanup
+     * instead, which both the free and Pro versions have had since 1.2. It
+     * needs no shell_exec(), so it runs even where that is disabled.
+     */
+    private function clear_polylang_cache() {
+        if ( ! function_exists('PLL') ) {
+            return;
+        }
+
+        $polylang = PLL();
+
+        if ( empty($polylang->model) || ! method_exists($polylang->model, 'clean_languages_cache') ) {
+            return;
+        }
+
+        $polylang->model->clean_languages_cache();
     }
 
     private function delete_views_cache() {

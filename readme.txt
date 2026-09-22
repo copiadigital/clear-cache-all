@@ -3,7 +3,7 @@ Contributors: copiadigital
 Tags: cache, performance, polylang, optimization
 Requires at least: 5.0
 Tested up to: 6.4
-Stable tag: 1.0.9
+Stable tag: 1.0.12
 Requires PHP: 7.4
 License: MIT License
 License URI: https://opensource.org/licenses/MIT
@@ -16,9 +16,9 @@ Clear Cache All is a WordPress plugin that automatically clears various caches w
 
 = Features =
 
-* Automatic cache clearing on post save
+* Automatic cache clearing on post save (can be turned off in Settings > Clear Cache All)
 * Clears WordPress object cache
-* Clears Polylang cache via WP-CLI
+* Clears Polylang's languages cache (when Polylang is active)
 * Clears W3 Total Cache (if installed)
 * Clears Blade view cache
 * Manual cache clearing via admin bar (Copia Digital users only)
@@ -43,9 +43,13 @@ Clear Cache All is a WordPress plugin that automatically clears various caches w
 
 The admin bar "Clear Cache All" button is only visible to logged-in users with @copiadigital.co email addresses.
 
+= Can I turn off automatic cache clearing? =
+
+Yes. Go to Settings > Clear Cache All and untick "Automatically clear caches when content is saved". Caches can still be cleared manually from the admin bar. This helps on larger sites, where clearing after every save can make saving slow.
+
 = Does this work with Polylang? =
 
-Yes! The plugin includes WP-CLI integration to clear Polylang's cache automatically.
+Yes. When Polylang (free or Pro) is active, its languages cache is cleared along with the others. On sites without Polylang this step is skipped.
 
 = What caches are cleared? =
 
@@ -56,6 +60,10 @@ Yes! The plugin includes WP-CLI integration to clear Polylang's cache automatica
 * Any other caches hooked into the clearing process
 
 == Changelog ==
+
+= 1.0.12 =
+* Added: Settings > Clear Cache All page with an option to turn off automatic cache clearing on save
+* Fixed: Polylang cache clearing now uses Polylang's own API and only runs when Polylang is active (`wp pll cache clear` is not a real command)
 
 = 1.0.11 =
 * Added readme.txt

@@ -12,6 +12,12 @@ class AutomateClearCacheServiceProvider implements Provider
     public function __construct()
     {
         $this->caches = new ClearAllCaches();
+
+        // Settings > Clear Cache All can switch automatic clearing off.
+        if (!SettingsServiceProvider::auto_clear_enabled()) {
+            return;
+        }
+
         add_action('post_updated', [$this, 'clear_cache_after_save_post']);
         add_action('acf/save_post', [$this, 'clear_cache_after_save_options']);
     }
