@@ -1,0 +1,298 @@
+name: Prepare and Deploy Release
+
+# Builds clear-cache-all-<version>.zip from the version in clear-cache-all.php,
+# tags and releases it on GitHub, then installs it on satispress.copia.tools,
+# which is what publishes the new version to SatisPress (satispress/clear-cache-all).
+#
+# Secrets (repository or organisation):
+#   COPIA_MAIN_PEM        SSH key for the bastion (vpn.copiadigital.co.uk)
+#   KNOWN_HOSTS_BASTION   known_hosts line for the bastion
+#   PUSH_RSA              SSH key for satispress.copia.tools (ec2-user)
+#   KNOWN_HOSTS_STAGING2  known_hosts line for satispress.copia.tools
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    # Sites update from SatisPress automatically, so only release what has
+    # been merged.
+    if: github.ref == 'refs/heads/master'
+
+    permissions:
+      contents: write
+
+    outputs:
+      tag: ${{ steps.get_version.outputs.TAG }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from plugin file
+        id: get_version
+        run: |
+          # Extract version from the plugin header ("* Version:      x.y.z")
+          TAG=$(grep -m1 -E '^[[:space:]]*\*[[:space:]]*Version:' clear-cache-all.php | sed -E 's/.*Version:[[:space:]]*([0-9.]+).*/\1/')
+
+          if [ -z "$TAG" ]; then
+            echo "Error: Could not extract version from clear-cache-all.php"
+            exit 1
+          fi
+
+          # Validate tag format
+          if ! [[ "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in format x.y.z (e.g., 1.0.13), got: $TAG"
+            exit 1
+          fi
+
+          # readme.txt carries the version too; a mismatch means one was missed.
+          STABLE_TAG=$(awk -F': *' 'tolower($1) == "stable tag" { print $2; exit }' readme.txt | tr -d '[:space:]')
+          if [ "$STABLE_TAG" != "$TAG" ]; then
+            echo "Error: readme.txt Stable tag ($STABLE_TAG) does not match clear-cache-all.php Version ($TAG)"
+            exit 1
+          fi
+
+          echo "Extracted version: $TAG"
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Check if tag already exists
+        run: |
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Error: Tag $TAG already exists!"
+            echo "Please update the version in clear-cache-all.php and readme.txt before running this workflow."
+            exit 1
+          fi
+          echo "Tag $TAG does not exist, proceeding..."
+
+      - name: Get release commit SHA
+        run: |
+          # Use the current HEAD as the release commit (version should already be committed)
+          echo "RELEASE_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "Release will be created from commit: $(git rev-parse HEAD)"
+
+      - name: Install Composer dependencies
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Create plugin zip
+        run: |
+          TAG="${{ env.TAG }}"
+
+          # Create a temporary directory for the plugin
+          mkdir -p /tmp/clear-cache-all
+
+          # Copy plugin files (excluding dev files)
+          rsync -av --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='.gitignore' \
+                    --exclude='.DS_Store' \
+                    --exclude='node_modules' \
+                    --exclude='.idea' \
+                    --exclude='.env' \
+                    --exclude='.env.example' \
+                    --exclude='.serena' \
+                    --exclude='CLAUDE.md' \
+                    ./ /tmp/clear-cache-all/
+
+          # Create the zip file
+          cd /tmp
+          zip -r "clear-cache-all-${TAG}.zip" clear-cache-all
+
+          # Move it back to the workspace
+          mv "clear-cache-all-${TAG}.zip" "$GITHUB_WORKSPACE/"
+
+          echo "Created clear-cache-all-${TAG}.zip"
+          ls -lh "$GITHUB_WORKSPACE/clear-cache-all-${TAG}.zip"
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ env.TAG }}"
+          ZIP_FILE="clear-cache-all-${TAG}.zip"
+
+          # Create the release
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes "Release version $TAG" \
+            --target "${{ env.RELEASE_SHA }}" \
+            "$ZIP_FILE"
+
+          echo "Release $TAG created successfully with $ZIP_FILE attached!"
+
+      - name: Release Summary
+        run: |
+          TAG="${{ env.TAG }}"
+          echo "## Release Created! :package:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: $TAG" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release**: [View Release](https://github.com/${{ github.repository }}/releases/tag/$TAG)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Zip File**: clear-cache-all-${TAG}.zip" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Proceeding to deployment..." >> $GITHUB_STEP_SUMMARY
+
+  deploy-release:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: prepare-release
+
+    env:
+      TAG: ${{ needs.prepare-release.outputs.tag }}
+
+    steps:
+      - name: Download release asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ env.TAG }}"
+          ZIP_NAME="clear-cache-all-${TAG}.zip"
+
+          # Download the zip file from the release
+          gh release download "$TAG" \
+            --repo ${{ github.repository }} \
+            --pattern "$ZIP_NAME"
+
+          # Verify the file was downloaded
+          if [ ! -f "$ZIP_NAME" ]; then
+            echo "Error: Failed to download $ZIP_NAME"
+            exit 1
+          fi
+
+          echo "Successfully downloaded $ZIP_NAME"
+          ls -lh "$ZIP_NAME"
+
+      - name: Install SSH key of bastion
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.COPIA_MAIN_PEM }}
+          name: id_rsa-bastion
+          known_hosts: ${{ secrets.KNOWN_HOSTS_BASTION }}
+          config: |
+            Host bastion
+              HostName vpn.copiadigital.co.uk
+              User ubuntu
+              IdentityFile ~/.ssh/id_rsa-bastion
+
+      - name: Install SSH key of target
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.PUSH_RSA }}
+          name: id_rsa-target
+          known_hosts: ${{ secrets.KNOWN_HOSTS_STAGING2 }}
+          config: |
+            Host satispress
+              HostName satispress.copia.tools
+              User ec2-user
+              StrictHostKeyChecking no
+              IdentityFile ~/.ssh/id_rsa-target
+              ProxyCommand ssh -W %h:%p bastion
+
+      - name: Copy zip to server
+        run: |
+          TAG="${{ env.TAG }}"
+          ZIP_FILE="clear-cache-all-${TAG}.zip"
+
+          # Create the deployment directory on the server if it doesn't exist
+          ssh satispress "mkdir -p ~/gha-plugin-deployments"
+
+          # Copy the zip file to the deployment directory
+          scp "$ZIP_FILE" satispress:~/gha-plugin-deployments/
+
+          echo "Successfully copied $ZIP_FILE to server deployment directory"
+
+      - name: Install plugin via direct extract
+        # We deliberately avoid `wp plugin install` here. WP-CLI runs PHP as the
+        # invoking user (ec2-user over SSH) and tries to extract into
+        # web/app/upgrade/<plugin>-<ver>/ before moving it to plugins/. With
+        # FS_METHOD=direct on this host and the runtime tree owned apache:apache,
+        # ec2-user can't create that staging dir and WP-CLI fails with
+        # "Could not create directory". We extract straight into plugins/ via
+        # sudo and fix ownership/perms in one go — no upgrade/ involved.
+        run: |
+          TAG="${{ env.TAG }}"
+          ZIP_FILE="clear-cache-all-${TAG}.zip"
+
+          ssh satispress << EOF
+            set -e
+            WP_PATH="/var/www/hosted/satispress.copia.tools"
+            ZIP="\$HOME/gha-plugin-deployments/${ZIP_FILE}"
+            PLUGINS_DIR="\$WP_PATH/web/app/plugins"
+            PLUGIN_DIR="\$PLUGINS_DIR/clear-cache-all"
+
+            echo "Installing plugin from: \$ZIP"
+
+            # Stage the new plugin under a hidden sibling, then atomic-swap it in.
+            # 'sudo mktemp -d' creates the dir as root:root mode 700, which would
+            # block the unprivileged dir-existence check below — relax to 755 so
+            # ec2-user can traverse into it to stat. All file ops still go via sudo.
+            STAGE="\$(sudo mktemp -d "\$PLUGINS_DIR/.clear-cache-all.XXXXXX")"
+            sudo chmod 755 "\$STAGE"
+            sudo unzip -q -o "\$ZIP" -d "\$STAGE"
+
+            # The zip contains a top-level "clear-cache-all/" dir.
+            EXTRACTED="\$STAGE/clear-cache-all"
+            if [ ! -d "\$EXTRACTED" ]; then
+              echo "ERROR: zip did not contain expected top-level directory clear-cache-all/"
+              sudo ls -la "\$STAGE"
+              sudo rm -rf "\$STAGE"
+              exit 1
+            fi
+
+            # Replace the old plugin dir with the new one.
+            if [ -d "\$PLUGIN_DIR" ]; then
+              echo "Removing old plugin directory: \$PLUGIN_DIR"
+              sudo rm -rf "\$PLUGIN_DIR"
+            fi
+            sudo mv "\$EXTRACTED" "\$PLUGIN_DIR"
+            sudo rm -rf "\$STAGE"
+
+            # Apache must own & be able to read the tree (FS_METHOD=direct).
+            sudo chown -R apache:apache "\$PLUGIN_DIR"
+            sudo find "\$PLUGIN_DIR" -type d -exec chmod 755 {} \;
+            sudo find "\$PLUGIN_DIR" -type f -exec chmod 644 {} \;
+
+            # Clean up the zip file
+            rm -f "\$ZIP"
+
+            # Verify installation (read-only — fine to run as ec2-user)
+            cd "\$WP_PATH"
+            INSTALLED_VERSION=\$(php wp-cli.phar plugin list --name=clear-cache-all --field=version)
+            echo "Installed version: \$INSTALLED_VERSION"
+
+            if [ "\$INSTALLED_VERSION" != "$TAG" ]; then
+              echo "ERROR: Expected version $TAG but got \$INSTALLED_VERSION"
+              exit 1
+            fi
+
+            echo "Plugin installation verified!"
+          EOF
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          TAG="${{ env.TAG }}"
+          echo "## Release and Deployment Complete! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: $TAG" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release**: [View Release](https://github.com/${{ github.repository }}/releases/tag/$TAG)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Zip File**: clear-cache-all-${TAG}.zip" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Server**: satispress.copia.tools" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Successfully deployed and installed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The plugin is now published through SatisPress as satispress/clear-cache-all $TAG." >> $GITHUB_STEP_SUMMARY
+
+      - name: Deployment Failed
+        if: failure()
+        run: |
+          echo "## Deployment Failed :x:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the workflow logs for details." >> $GITHUB_STEP_SUMMARY

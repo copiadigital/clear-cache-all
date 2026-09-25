@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.14] - 2026-09-25
+
+### Added
+- "Prepare and Deploy Release" GitHub Actions workflow (`.github/workflows/prepare-release.yml`), the same as the Site Monitor Hub's. Run by hand from `master`, it reads the version from `clear-cache-all.php`, checks it matches `readme.txt`'s Stable tag, builds `clear-cache-all-<version>.zip`, tags and releases it on GitHub, and installs it on satispress.copia.tools, which publishes it as `satispress/clear-cache-all`. The plugin's code is unchanged.
+
+## [1.0.13] - 2026-09-25
+
+### Fixed
+- Saving a post no longer runs WP-CLI in new processes. Each save used to run `wp w3-total-cache flush post` and `wp cache flush` through `shell_exec()`, loading WordPress twice more and making the save wait for both. Caches are now cleared in the same request through `w3tc_flush_post()` and `wp_cache_flush()`, once per request, at shutdown, for every post the request updated. Saving a menu now clears them once rather than once per menu item.
+- The new processes could re-enter without end. When something saved a post while WordPress was loading (for example, a theme updating a Contact Form 7 form from WP-CLI), each WP-CLI process fired `post_updated` again and started the next. On a shared staging server this ran until memory or database connections ran out. The admin bar button still uses WP-CLI for `acorn view:clear`, but never from inside WP-CLI.
+- The W3 Total Cache page_enhanced directory is found through `W3TC_CACHE_PAGE_ENHANCED_DIR` instead of `$_SERVER['DOCUMENT_ROOT']`, which is empty under WP-CLI and only matched Bedrock.
+
+### Changed
+- Autosaves and revisions no longer clear caches.
+- W3 Total Cache's page cache is flushed for every updated post that has a page (a viewable post type), not only the post open in the editor. Menu items, forms and other posts without pages only clear the object cache.
+
 ## [1.0.12] - 2026-09-22
 
 ### Added
