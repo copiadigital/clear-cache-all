@@ -4,57 +4,98 @@ namespace ClearCacheAll\Caches;
 
 class ClearAllCaches {
 
+    /**
+     * W3 Total Cache and the object cache are flushed in this process through
+     * their own APIs. Only the Blade view cache still needs WP-CLI (Acorn's
+     * `view:clear`); this runs from the admin bar button, never on save.
+     */
     public function clear_all_caches() {
         // delete_w3tc_page_enhanced_cache
-        $this->delete_dir($_SERVER['DOCUMENT_ROOT'] . '/app/cache/page_enhanced');
-        
-        if (function_exists('shell_exec')) {
-            // clear w3 total cache
-            if ( defined( 'W3TC' ) ) {
-                shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar w3-total-cache flush all');
-            }
+        $this->delete_dir($this->page_enhanced_dir());
+
+        // clear w3 total cache
+        if (function_exists('w3tc_flush_all')) {
+            w3tc_flush_all();
+        }
+
+        if ($this->can_run_wp_cli()) {
             // clear view blade cache
             if (function_exists('view')) {
                 $view_clear_cli = shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar acorn view:clear');
             } else {
                 $this->delete_views_cache();
             }
-            // clear wordpress cache
-            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
         }
+
+        // clear wordpress cache
+        wp_cache_flush();
 
         $this->clear_polylang_cache();
     }
 
     public function clear_all_caches_not_view() {
         // delete_w3tc_page_enhanced_cache
-        $this->delete_dir($_SERVER['DOCUMENT_ROOT'] . '/app/cache/page_enhanced');
+        $this->delete_dir($this->page_enhanced_dir());
 
-        if (function_exists('shell_exec')) {
-            // clear w3 total cache
-            if ( defined( 'W3TC' ) ) {
-                shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar w3-total-cache flush all');
-            }
-            
-            // clear wordpress cache
-            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
+        // clear w3 total cache
+        if (function_exists('w3tc_flush_all')) {
+            w3tc_flush_all();
         }
+
+        // clear wordpress cache
+        wp_cache_flush();
 
         $this->clear_polylang_cache();
     }
 
-    public function clear_specific_post_page_cache() {
-        if ( function_exists('shell_exec') ) {
-            // clear w3 total cache
-            if ( defined( 'W3TC' ) && $id = get_the_ID()) {
-                shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . "wp-cli.phar w3-total-cache flush post $id");
+    /**
+     * Clears the page cache of the given posts that have pages, then the
+     * object cache once.
+     *
+     * This used to run `wp w3-total-cache flush post` and `wp cache flush` in
+     * new processes, which loaded WordPress twice more on every save. When the
+     * save itself happened while WordPress was loading in WP-CLI, each new
+     * process could save again and start another, without end.
+     *
+     * @param int[] $post_ids
+     */
+    public function clear_posts_page_cache(array $post_ids) {
+        // clear w3 total cache, as `wp w3-total-cache flush post <id>` does,
+        // for posts that have pages (not menu items, forms and the like)
+        if (function_exists('w3tc_flush_post')) {
+            foreach ($post_ids as $post_id) {
+                if (is_post_type_viewable(get_post_type($post_id))) {
+                    w3tc_flush_post($post_id, true);
+                }
             }
-
-            // clear wordpress cache
-            shell_exec('php ' . CLEAR_CACHE_ALL_PLUGIN_DIR . 'wp-cli.phar cache flush');
         }
 
+        // clear wordpress cache
+        wp_cache_flush();
+
         $this->clear_polylang_cache();
+    }
+
+    /**
+     * Whether WP-CLI can be started in a new process.
+     *
+     * Never from inside WP-CLI: the new process loads WordPress again, so
+     * anything that clears caches while loading would start another.
+     */
+    private function can_run_wp_cli() {
+        return function_exists('shell_exec') && !(defined('WP_CLI') && WP_CLI);
+    }
+
+    /**
+     * W3 Total Cache's disk-enhanced page cache directory.
+     *
+     * `$_SERVER['DOCUMENT_ROOT']` is empty under WP-CLI and only matched on
+     * Bedrock, so use W3TC's own constant, falling back to where it puts it.
+     */
+    private function page_enhanced_dir() {
+        return defined('W3TC_CACHE_PAGE_ENHANCED_DIR')
+            ? W3TC_CACHE_PAGE_ENHANCED_DIR
+            : WP_CONTENT_DIR . '/cache/page_enhanced';
     }
 
     /**

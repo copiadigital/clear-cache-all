@@ -3,7 +3,7 @@ Contributors: copiadigital
 Tags: cache, performance, polylang, optimization
 Requires at least: 5.0
 Tested up to: 6.4
-Stable tag: 1.0.12
+Stable tag: 1.0.13
 Requires PHP: 7.4
 License: MIT License
 License URI: https://opensource.org/licenses/MIT
@@ -45,7 +45,7 @@ The admin bar "Clear Cache All" button is only visible to logged-in users with @
 
 = Can I turn off automatic cache clearing? =
 
-Yes. Go to Settings > Clear Cache All and untick "Automatically clear caches when content is saved". Caches can still be cleared manually from the admin bar. This helps on larger sites, where clearing after every save can make saving slow.
+Yes. Go to Settings > Clear Cache All and untick "Automatically clear caches when content is saved". Caches can still be cleared manually from the admin bar.
 
 = Does this work with Polylang? =
 
@@ -60,6 +60,12 @@ Yes. When Polylang (free or Pro) is active, its languages cache is cleared along
 * Any other caches hooked into the clearing process
 
 == Changelog ==
+
+= 1.0.13 =
+* Fixed: Saving a post no longer runs WP-CLI in new processes. The page and object caches are cleared in the same request through the W3 Total Cache and WordPress APIs, once per request, after the last post is saved
+* Fixed: A save made while WordPress was loading in WP-CLI could start a new WP-CLI process that saved again, without end, until the server ran out of memory
+* Changed: Autosaves and revisions no longer clear caches
+* Changed: The page cache is flushed for every updated post that has a page, not only the post open in the editor
 
 = 1.0.12 =
 * Added: Settings > Clear Cache All page with an option to turn off automatic cache clearing on save

@@ -26,7 +26,7 @@ A WordPress plugin for clearing all caches including Polylang cache.
 
 ## WP-CLI
 
-This plugin includes WP-CLI version 2.12.0 for cache operations.
+This plugin includes WP-CLI version 2.12.0. It is only used by the admin bar button, to clear the Blade view cache with `acorn view:clear`, and never from inside WP-CLI. Everything else is cleared in the same request through the W3 Total Cache and WordPress APIs.
 
 ### Updating WP-CLI
 
@@ -53,7 +53,7 @@ The plugin automatically clears all caches when:
 
 This is on by default. To turn it off, go to **Settings > Clear Cache All** and untick **Automatically clear caches when content is saved**. Caches can then still be cleared manually from the admin bar.
 
-Worth turning off on larger sites: caches are cleared once for every post updated, and saving a menu updates every menu item, so saves can become slow enough to time out.
+Caches are cleared once, at the end of the request, for all the posts it updated, so saving a menu clears them once rather than once per menu item. Autosaves and revisions are skipped.
 
 ### Manual Cache Clearing
 
