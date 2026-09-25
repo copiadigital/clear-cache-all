@@ -3,7 +3,7 @@ Contributors: copiadigital
 Tags: cache, performance, polylang, optimization
 Requires at least: 5.0
 Tested up to: 6.4
-Stable tag: 1.0.13
+Stable tag: 1.0.14
 Requires PHP: 7.4
 License: MIT License
 License URI: https://opensource.org/licenses/MIT
@@ -60,6 +60,9 @@ Yes. When Polylang (free or Pro) is active, its languages cache is cleared along
 * Any other caches hooked into the clearing process
 
 == Changelog ==
+
+= 1.0.14 =
+* Added: Release workflow that builds each version, tags it on GitHub and publishes it through SatisPress. The plugin's code is unchanged
 
 = 1.0.13 =
 * Fixed: Saving a post no longer runs WP-CLI in new processes. The page and object caches are cleared in the same request through the W3 Total Cache and WordPress APIs, once per request, after the last post is saved

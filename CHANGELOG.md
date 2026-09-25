@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.14] - 2026-09-25
+
+### Added
+- "Prepare and Deploy Release" GitHub Actions workflow (`.github/workflows/prepare-release.yml`), the same as the Site Monitor Hub's. Run by hand from `master`, it reads the version from `clear-cache-all.php`, checks it matches `readme.txt`'s Stable tag, builds `clear-cache-all-<version>.zip`, tags and releases it on GitHub, and installs it on satispress.copia.tools, which publishes it as `satispress/clear-cache-all`. The plugin's code is unchanged.
+
 ## [1.0.13] - 2026-09-25
 
 ### Fixed
